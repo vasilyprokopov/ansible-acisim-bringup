@@ -1,0 +1,203 @@
+---
+- name: Bring Up Play
+  hosts: all
+  gather_facts: false
+
+  vars:
+    # Preparing log-in anchor to omit repetitive lines
+    aci_login: &aci_login
+      host: "{{ apic }}"
+      port: "{{ apicPort }}"
+      username: "{{ apicUser }}"
+      password: "{{ apicPassword }}"
+      validate_certs: no
+
+    # Preparing log-in anchor for signature-based authentication
+    aci_login_cert: &aci_login_cert
+      host: "{{ apic }}"
+      port: "{{ apicPort }}"
+      username: "{{ automationUser }}"
+      private_key: "{{ privateKey }}"
+      certificate_name: "{{automationUser}}_crt"
+      validate_certs: no
+
+  tasks:
+    # Adding a user for signature-based authentication
+    - name: Add User
+      delegate_to: localhost
+      aci_rest:
+        <<: *aci_login
+        path: /api/policymgr/mo/uni/userext.json
+        method: post
+        content:
+          {
+            "aaaUser": {
+              "attributes": {
+                "name": "{{automationUser}}",
+                "pwd": "{{automationPassword}}"
+              },
+              "children": [{
+                "aaaUserDomain": {
+                  "attributes": {
+                    "name": "all"
+                  },
+                  "children": [{
+                    "aaaUserRole": {
+                      "attributes": {
+                        "name": "admin",
+                        "privType": "writePriv"
+                      }
+                    }
+                  }]
+                }
+              }]
+            }
+          }
+
+    # Adding a certificate for signature-based authentication
+    - name: Add X.509 Certificate to a User
+      delegate_to: localhost
+      aci_rest:
+        <<: *aci_login
+        path: /api/node/mo/uni/userext/user-{{automationUser}}/usercert-{{automationUser}}_crt.json
+        method: post
+        content:
+          {
+            "aaaUserCert": {
+              "attributes": {
+                "name": "{{automationUser}}_crt",
+                "data": "{{automationCert}}"
+              }
+            }
+          }
+
+    # Adding system banners that will indicate that this is a simulator
+    - name: Add System Banners
+      delegate_to: localhost
+      aci_rest:
+        <<: *aci_login_cert
+        path: /api/node/mo/uni/userext/preloginbanner.json
+        method: post
+        content:
+          {
+              "aaaPreLoginBanner": {
+                  "attributes": {
+                      "bannerMessage": "You sure you want to waste your hours here?\nOk, I know the answer...",
+                      "bannerMessageSeverity": "info",
+                      "message": "{{apicBanner}}",
+                      "guiTextMessage": "{{apicBanner}}"
+                  }
+              }
+          }
+
+    # Registering virtual nodes
+    - name: Switch Registration
+      delegate_to: localhost
+      aci_rest:
+        <<: *aci_login_cert
+        path: /api/node/mo/uni/controller.json
+        method: post
+        content:
+          {
+            "fabricNodeIdentPol": {
+              "attributes": {},
+              "children": [{
+                  "fabricNodeIdentP": {
+                    "attributes": {
+                      "serial": "TEP-1-101",
+                      "nodeId": "111",
+                      "name": "Leaf111"
+                    },
+                  }
+                },
+                {
+                  "fabricNodeIdentP": {
+                    "attributes": {
+                      "serial": "TEP-1-102",
+                      "nodeId": "112",
+                      "name": "Leaf112"
+                    }
+                  }
+                },
+                {
+                  "fabricNodeIdentP": {
+                    "attributes": {
+                      "serial": "TEP-1-104",
+                      "nodeId": "113",
+                      "name": "Leaf113"
+                    }
+                  }
+                },
+                {
+                  "fabricNodeIdentP": {
+                    "attributes": {
+                      "serial": "TEP-1-105",
+                      "nodeId": "114",
+                      "name": "Leaf114"
+                    }
+                  }
+                },
+                {
+                  "fabricNodeIdentP": {
+                    "attributes": {
+                      "serial": "TEP-1-103",
+                      "nodeId": "101",
+                      "name": "Spine101"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+
+    # Adding remote FTP server for storing backups
+    - name: Add Remote Location FTP
+      delegate_to: localhost
+      aci_rest:
+        <<: *aci_login_cert
+        path: /api/node/mo/uni/fabric/path-FTP-{{ftpIP}}.json
+        method: post
+        content:
+          {
+            "fileRemotePath": {
+              "attributes": {
+                "remotePort": "21",
+                "name": "FTP-{{ftpIP}}",
+                "host": "{{ftpIP}}",
+                "protocol": "ftp",
+                "remotePath": "{{ftpPath}}",
+                "userName": "{{ftpUser}}",
+                "userPasswd": "{{ftpPassword}}"
+              }
+            }
+          }
+
+    # Adding backup scheduler
+    - name: Add Daily Backup
+      delegate_to: localhost
+      aci_rest:
+        <<: *aci_login_cert
+        path: /api/node/mo/uni/fabric/configexp-DialyFtpBackup.json
+        method: post
+        content:
+          {
+            "configExportP": {
+              "attributes": {
+                "name": "DialyFtpBackup",
+                "adminSt": "triggered"
+              },
+              "children": [{
+                "configRsExportScheduler": {
+                  "attributes": {
+                    "tnTrigSchedPName": "EveryEightHours"
+                  }
+                }
+              }, {
+                "configRsRemotePath": {
+                  "attributes": {
+                    "tnFileRemotePathName": "FTP-{{ftpIP}}"
+                  }
+                }
+              }]
+            }
+          }

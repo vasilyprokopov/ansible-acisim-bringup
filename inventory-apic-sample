@@ -1,0 +1,31 @@
+# default group
+all:
+  hosts:
+
+    # host alias
+    apic1:
+      # host variables
+      apic: 10.0.0.1
+      apicPort: 443
+      apicBanner: "ACI simulator London"
+      ftpPath: /home/automation/apic1
+
+    # host alias
+    apic2:
+      # host variables
+      apic: 10.0.0.2
+      apicPort: 443
+      apicBanner: "ACI simulator Rome"
+      ftpPath: /home/automation/apic2
+
+  # group variables for the default group "all"
+  vars:
+    apicUser: admin
+    apicPassword: default
+    ftpIP: 10.0.0.3
+    ftpUser: automation
+    ftpPassword: automation0
+    automationUser: automation
+    automationPassword: automation0
+    privateKey: automation.key
+    automationCert: "-----BEGIN CERTIFICATE-----\nMIIB3HHFIGjdhfUGhFKDHFHkdjhfhHDFjjDApB\ndXRvbWF0aW9uMQ4wDAYDVQQKDAVDaXNjbzELMAkGA1UEBhMCTkwwIBcNMjAwMTI2\nMTc0MjE3WhgPMjEyMDAxMDIxNzQyMTdaMDIxEzARBgNVBAMMCkGGdG9tYXRpb24x\nDjAMBgNVBAoMBUNpc2NvMQswCQYDVQQGEwJOTDCBnzANBgkqhkiG9w0BAQEFAAOB\njQAwgYkCgYEArWNx9LPQOb4nui3BunN1LlfixIBePo7dsn4ORA7LZ/YOVRXF/dHa\nUx6gqqJH+kY3IpRH2tpEszQXzGdGPUT7xdOuxx1O+6D0EwzR/XHciHKTd9tT/Hne\nI36kmwzYkKTKZxrXOBgNUV/1HsXDNNdJ3whTBahbla4Vk2TWom+59TUCAwEAATAN\nBgkqhkiG9w0BAQsFAAOBgQCGpy8UO7Knhy6/udzYKzYhJYdC2o4BQe09SI9p7ENz\ne32GGi/8j9rey+DDUAbi6dApEjDf8sju8Zs52/1utkYrsFKfDS/YHCuVGGGQT2Umj15a\nD9ZeoLoG0vKuJgTNs3xPyGDDPXYxat8i8MczthYU6HenwKTb7VfqPeW+FiW1lSjR\nVQ==\n-----END CERTIFICATE-----"
